@@ -1,0 +1,149 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+if not os.getenv("GEMINI_API_KEY"):
+    raise RuntimeError("GEMINI_API_KEY is not set")
+
+from langchain.messages import HumanMessage
+
+from langchain.agents import create_agent
+
+def input_matrix():
+    while True:
+        matrix = []
+
+        rows = int(input("How many rows does your matrix have? "))
+        cols = int(input("How many columns does your matrix have? "))
+
+        for row in range(rows):
+            row_n = []
+            for col in range(cols):
+                row_n.append(float(input(
+                    f"what is the {col + 1} number in the {row + 1} row? ")))
+            matrix.append(row_n)
+
+        print("Here is the matrix you input: ")
+        print_matrix(matrix)
+        correct = input("Is this the correct matrix? (Y/n): ")
+
+        if correct == "Y":
+            return matrix
+
+
+def print_matrix(matrix):
+    """This function prints out list of lists nicely in matrix form
+    
+    paramteter:
+        matrix - list: A list of lists filled with ints to represent a matrix
+    """
+    for row in matrix:
+        print("[", end=" ")
+        for num in row:
+            print(num, end=" ")
+        print("]")
+
+def row_swapping(matrix: list, row1: int, row2: int):
+    """This function switches the position of two rows in a matrix
+    
+    parameters:
+        matrix - list: A list of lists filled with ints to represent a matrix
+        row1   - int : The index of one of the rows being switched
+        row2   - int : The index of the other row being swithced
+    
+    returns:
+        new_matrix - list: The matrix after row swapping
+    """
+    new_matrix = []
+
+    for r in range(len(matrix)):
+        if r == row1:
+            new_matrix.append(matrix[row2])
+        elif r == row2:
+            new_matrix.append(matrix[row1])
+        else:
+            new_matrix.append(matrix[r])
+
+    return new_matrix
+
+def row_multiplication(matrix: list, row: int, mult: float):
+    """This function multiplies a row by any non-zero number
+    
+    parameters:
+        matrix - list : A list of lists filled with ints to represent a matrix
+        row    - int  : The row being multiplied
+        mult   - float: The number the row is being multiplied by
+    
+    returns:
+        new_matrix - list: The matrix after row multiplication
+    """
+    new_matrix = []
+
+    for r in range(len(matrix)):
+        if r == row:
+            multipled_row = []
+            for i in range(len(matrix[row])):
+                multipled_row.append(matrix[row][i] * mult)
+            new_matrix.append(multipled_row)
+        else:
+            new_matrix.append(matrix[r])
+
+    return new_matrix
+
+def row_addition(matrix: list, row1: int, row2: int, mult: float):
+    """This function adds a multiple of one row to another
+
+    parameters:
+        matrix - list : A list of lists filled with ints to represent a matrix
+        row1   - int  : The row that is being multiplied than added to another
+        row2   - int  : The row that is being added to by another row
+        mult   - float: The number the row is being multiplied by
+    
+    returns:
+        new_matrix - list: The matrix after row addition
+    """
+    new_matrix = []
+    row1_vals = matrix[row1]
+    row2_vals = matrix[row2]
+    new_row = []
+
+    for i in range(len(row2_vals)):
+        new_row.append(row2_vals[i] + (mult * row1_vals[i]))
+
+    for row in range(len(matrix)):
+        if row == row2:
+            new_matrix.append(new_row)
+        else:
+            new_matrix.append(matrix[row])
+
+    return new_matrix
+
+
+agent = create_agent(
+    model="google_genai:gemini-3.5-flash-lite",
+    tools=[row_swapping, row_multiplication, row_addition, print_matrix],
+    system_prompt="You have tools designed to help you reduce a matrix into" \
+    "row reduced echelon form. A matrix is in row reduced echelon form when " \
+    "the first non-zero entry (known as a leading entry) in each row is one, " \
+    "and each leading entry is the only number in its column. The best " \
+    "practice for row reducing a matrix is first to zero out every below the " \
+    "leading entries, before zeroing out the values above." \
+    "1. Row Swapping: When row reducing a matrix you can switch the position " \
+    "   of two rows," \
+    "2. Row Multiplication: Multiply any number exept zero to an entire row," \
+    "3. Row Addition: Add a multiple of one row to another." \
+    "These three operations are always enough to row reduce a matrix and you" \
+    "have tools to do each of them, use the tools rather than guessing." \
+    "NOTE: the first row and column is numbered 0." \
+    "" \
+    "After row reducing a matrix, show me its row reduced form." \
+    "Use the print_matrix function to nicely print out the row reduced matrix" \
+    "in your response message.",
+)
+
+prompt = HumanMessage(f"Here is a matrix to row reduce: {input_matrix()}")
+
+result = agent.invoke(
+    {"messages": [prompt]}
+)
+print(result["messages"][-1].text)

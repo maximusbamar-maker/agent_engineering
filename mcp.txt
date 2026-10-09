@@ -1,0 +1,15 @@
+mcp (model context protocal)
+
+types of mcp servers:
+    stdio:
+        -local communication with MCP server
+        -only one client per instance
+        -server starts when the request is made
+
+    http:
+        -remote communication with MCP server
+        -serves many clients
+        -server is always on
+
+mcp is a universal way to access api for ai agents
+it works by having the agent get a list of tools then request a specific tool to use
