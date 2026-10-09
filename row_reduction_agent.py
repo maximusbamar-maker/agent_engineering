@@ -118,32 +118,37 @@ def row_addition(matrix: list, row1: int, row2: int, mult: float):
 
     return new_matrix
 
+SYSTEM_PROMPT = """
+You have tools designed to help you reduce a matrix into" \
+row reduced echelon form. A matrix is in row reduced echelon form when 
+the first non-zero entry (known as a leading entry) in each row is one, 
+and each leading entry is the only number in its column. The best 
+practice for row reducing a matrix is first to zero out every below the 
+leading entries, before zeroing out the values above.
+1. Row Swapping: When row reducing a matrix you can switch the position 
+   of two rows,
+2. Row Multiplication: Multiply any number exept zero to an entire row,
+3. Row Addition: Add a multiple of one row to another.
+These three operations are always enough to row reduce a matrix and you
+have tools to do each of them, use the tools rather than guessing.
+NOTE: the first row and column is numbered 0.
 
-agent = create_agent(
+After row reducing a matrix, show me its row reduced form.
+"""
+
+row_reduction_agent = create_agent(
     model="google_genai:gemini-3.5-flash-lite",
     tools=[row_swapping, row_multiplication, row_addition, print_matrix],
-    system_prompt="You have tools designed to help you reduce a matrix into" \
-    "row reduced echelon form. A matrix is in row reduced echelon form when " \
-    "the first non-zero entry (known as a leading entry) in each row is one, " \
-    "and each leading entry is the only number in its column. The best " \
-    "practice for row reducing a matrix is first to zero out every below the " \
-    "leading entries, before zeroing out the values above." \
-    "1. Row Swapping: When row reducing a matrix you can switch the position " \
-    "   of two rows," \
-    "2. Row Multiplication: Multiply any number exept zero to an entire row," \
-    "3. Row Addition: Add a multiple of one row to another." \
-    "These three operations are always enough to row reduce a matrix and you" \
-    "have tools to do each of them, use the tools rather than guessing." \
-    "NOTE: the first row and column is numbered 0." \
-    "" \
-    "After row reducing a matrix, show me its row reduced form." \
-    "Use the print_matrix function to nicely print out the row reduced matrix" \
-    "in your response message.",
+    system_prompt=SYSTEM_PROMPT,
 )
 
-prompt = HumanMessage(f"Here is a matrix to row reduce: {input_matrix()}")
+def prompt_rr_agent(matrix):
+    return HumanMessage(f"Here is a matrix to row reduce: {matrix}")
 
-result = agent.invoke(
-    {"messages": [prompt]}
-)
-print(result["messages"][-1].text)
+if __name__ == "__main__":
+    prompt = HumanMessage(f"Here is a matrix to row reduce: {input_matrix()}")
+
+    result = row_reduction_agent.invoke(
+        {"messages": [prompt]}
+    )
+    print(result["messages"][-1].text)
